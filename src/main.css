@@ -1,0 +1,32 @@
+/* Custom styles for a desktop app feel */
+body {
+    font-family: 'Inter', sans-serif;
+    /* Prevents the user from selecting text, common in desktop apps */
+    user-select: none;
+    overflow: hidden; /* Prevent scrollbars from appearing */
+}
+
+/* Custom title bar styles */
+#title-bar {
+    /* Allows the window to be dragged from this element */
+    -webkit-app-region: drag;
+    height: 32px; /* Standard title bar height */
+    /*background-color: #1f2937; /* gray-800 */
+    background-color: #273448; /* gray-800 */
+}
+
+#title-bar-buttons {
+    /* Prevents dragging from the buttons themselves */
+    -webkit-app-region: no-drag;
+}
+
+/* Style for when a file is being dragged over the drop zone */
+.drag-over {
+    border-color: #3b82f6; /* blue-500 */
+    background-color: #374151; /* gray-700 */
+}
+
+/* Hiding the default file input */
+#file-upload {
+    display: none;
+}

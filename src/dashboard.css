@@ -1,0 +1,33 @@
+/* Custom styles for a desktop app feel */
+body {
+    font-family: 'Inter', sans-serif;
+    user-select: none;
+    overflow: hidden;
+    background-color: #1F2937; /* Equivalent to bg-gray-800 */
+}
+
+/* Custom title bar styles */
+#title-bar {
+    -webkit-app-region: drag;
+    height: 40px; 
+    background-color: #111827; /* gray-900 */
+}
+
+#title-bar-buttons {
+    -webkit-app-region: no-drag;
+}
+
+/* Custom scrollbar for the table container */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #1f2937; /* gray-800 */
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #4b5563; /* gray-600 */
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #6b7280; /* gray-500 */
+}
