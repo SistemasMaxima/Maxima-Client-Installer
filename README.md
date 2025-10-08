@@ -1,2 +1,2 @@
-\# Cargo Monterrey App
+# Cargo Monterrey App
 
