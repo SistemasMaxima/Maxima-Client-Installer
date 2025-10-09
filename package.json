@@ -2,13 +2,24 @@
   "name": "cargo-mty-app",
   "version": "1.0.0",
   "description": "Application to parse files and clean them",
-  "main": "main.js",
+  "main": "dist/src/config/main.js",
   "scripts": {
-    "start": "electron ."
+    "compile-ts": "tsc -p src/config/tsconfig.json && tsc -p src/app/tsconfig.renderer.json",
+    "copy-html":"copyfiles -u 1 src/**/*.html dist/src/",
+    "copy-css":"copyfiles -u 1 src/**/*.css dist/src/",
+    "build": "npm run compile-ts && npm run copy-html && npm run copy-css",
+    "start": "npm run build && electron . --trace-warnings && npm run clean",
+    "start-debug": "npm run build && electron . --trace-warnings",
+    "watch": "tsc -w",
+    "clean": "rmdir /s /q \"./dist\""
   },
   "author": "adrianmtztrev",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^38.2.1"
+    "@electron/remote": "^2.1.3",
+    "@types/node": "^24.7.0",
+    "copyfiles": "^2.4.1",
+    "electron": "^38.2.1",
+    "typescript": "^5.9.3"
   }
 }
