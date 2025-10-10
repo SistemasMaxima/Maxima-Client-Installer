@@ -5,14 +5,16 @@ export interface ElectronAPI {
   minimizeWindow: () => void;
   maximizeWindow: () => void;
   closeWindow: () => void;
-  sendFile: (filePath: string) => void;
+  selectFile: () => void;
+  runParser: () => void;
 }
 
 const api: ElectronAPI = {
   minimizeWindow: () => ipcRenderer.send('minimize-window'),
   maximizeWindow: () => ipcRenderer.send('maximize-window'),
   closeWindow: () => ipcRenderer.send('close-window'),
-  sendFile: (filePath: string) => ipcRenderer.send('file-selected', filePath),
+  selectFile: () => ipcRenderer.invoke('select-file'),
+  runParser: () => ipcRenderer.invoke('run-parser'),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', api);

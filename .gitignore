@@ -2,6 +2,7 @@
 /node_modules
 
 #Logs
+/logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -35,3 +36,8 @@ pycache/
 *.pyc
 *.pyo
 *.pyd
+
+# files of the app
+/data
+*.csv
+*.xlsx

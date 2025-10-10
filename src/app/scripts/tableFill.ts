@@ -4,7 +4,8 @@ interface IElectronAPI {
     minimizeWindow: () => void;
     maximizeWindow: () => void;
     closeWindow: () => void;
-    sendFile: (filePath: string) => void;
+    selectFile: () => Promise<string | null>;
+    runParser: () => Promise<any>; 
 }
 
 // Step 2: Extend the global Window interface to tell TypeScript
@@ -19,20 +20,28 @@ declare global {
 // No import is necessary because the preload script has already attached it.
 document.addEventListener('DOMContentLoaded', () => {
     const minimizeBtn = document.getElementById('minimize-window');
+    const maximizeBtn = document.getElementById('maximize-window');
+    const closeBtn = document.getElementById('close-window');
+
+    const uploadButton = document.getElementById('upload-button');
+    const processButton = document.getElementById('process-button') as HTMLButtonElement;
+    const selectedFileSpan = document.getElementById('selected-file');
+    
+    const tableBody = document.getElementById('table-body');
+
     if (minimizeBtn) {
         minimizeBtn.addEventListener('click', () => {
             window.electronAPI.minimizeWindow();
         });
     }
 
-    const maximizeBtn = document.getElementById('maximize-window');
     if (maximizeBtn) {
         maximizeBtn.addEventListener('click', () => {
             window.electronAPI.maximizeWindow();
         });
     }
 
-    const closeBtn = document.getElementById('close-window');
+   
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
             window.electronAPI.closeWindow();
@@ -40,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // (The rest of your event listeners for the table, file upload, etc.)
-    const tableBody = document.getElementById('table-body');
     if (tableBody) {
         const rowsHTML = Array(20).fill(0).map(() => `
             <tr class="hover:bg-gray-700/50">
@@ -52,21 +60,42 @@ document.addEventListener('DOMContentLoaded', () => {
         tableBody.innerHTML = rowsHTML;
     }
 
-    const uploadButton = document.getElementById('upload-button');
-    const fileUploadInput = document.getElementById('file-upload') as HTMLInputElement;
+    // --- File Selection & Processing Logic ---
+    if (uploadButton && processButton && selectedFileSpan) {
+        // Disable the process button initially
+        processButton.disabled = true;
 
-    if (uploadButton) {
-        uploadButton.addEventListener('click', () => {
-            fileUploadInput.click();
+        // Add listener to the "Subir archivo" (Upload) button
+        uploadButton.addEventListener('click', async () => {
+            selectedFileSpan.textContent = 'Selecting...';
+            const fileName = await window.electronAPI.selectFile();
+
+            if (fileName) {
+                selectedFileSpan.textContent = `${fileName}`;
+                processButton.disabled = false; // Enable the process button
+            } else {
+                selectedFileSpan.textContent = 'No file selected';
+                processButton.disabled = true; // Keep it disabled
+            }
         });
-    }
 
-    if(fileUploadInput) {
-        fileUploadInput.addEventListener('change', (event) => {
-            const file = (event.target as HTMLInputElement).files?.[0];
-            if (file) {
-                console.log('Archivo seleccionado:', file.name);
-                window.electronAPI.sendFile(file.name); 
+        // Add listener to the "Process" button
+        processButton.addEventListener('click', async () => {
+            selectedFileSpan.textContent = 'Processing...';
+            processButton.disabled = true; // Disable while processing
+            try {
+                const result = await window.electronAPI.runParser();
+                console.log('Result from Python:', result);
+
+                if (result.status === 'error') {
+                    selectedFileSpan.textContent = `Error: ${result.message}`;
+                } else {
+                    selectedFileSpan.textContent = `Processed: ${result.message}`;
+                }
+
+            } catch (error) {
+                console.error('An error occurred while running the Python script:', error);
+                selectedFileSpan.textContent = 'Error during processing.';
             }
         });
     }

@@ -4,14 +4,17 @@
   "description": "Application to parse files and clean them",
   "main": "dist/src/config/main.js",
   "scripts": {
+    "compile-py": "echo compiling python script... && pyinstaller ./engine/parser.py --clean --noconfirm --log-level=ERROR",
     "compile-ts": "tsc -p src/config/tsconfig.json && tsc -p src/app/tsconfig.renderer.json",
+    "compile-all":"npm run compile-py && npm run compile-ts",
     "copy-html":"copyfiles -u 1 src/**/*.html dist/src/",
     "copy-css":"copyfiles -u 1 src/**/*.css dist/src/",
-    "build": "npm run compile-ts && npm run copy-html && npm run copy-css",
-    "start": "npm run build && electron . --trace-warnings && npm run clean",
-    "start-debug": "npm run build && electron . --trace-warnings",
-    "watch": "tsc -w",
-    "clean": "rmdir /s /q \"./dist\""
+    "copy-all":"npm run copy-html && npm run copy-css",
+    "build": "npm run compile-all && npm run copy-all",
+    "start": "npm run secure-run && npm run clean && npm run build && electron . --trace-warnings && npm run clean",
+    "start-debug": "npm run secure-run && npm run build && electron . --trace-warnings",
+    "secure-run": "if NOT \"%cd%\" == \"%INIT_CWD%\" (echo Error: This script must be run from the project root. & exit 1) else (echo Running script...)",
+    "clean": "if exist \"./dist\" rmdir /s /q \"./dist\" && if exist \"./build\" rmdir /s /q \"./build\""
   },
   "author": "adrianmtztrev",
   "license": "ISC",
