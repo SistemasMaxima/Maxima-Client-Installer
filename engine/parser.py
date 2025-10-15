@@ -3,100 +3,78 @@ import json
 import csv
 import re
 
-baseLink = "https://www.paquetexpress.com.mx/rastreo/"
-links = []
-trackNum = []
-jsonFile = "../data/data.json"
-allInfo = {}
-data = {"totalTrackNumbers":"", "totalLinks":0, "links": []}#{"totalTrackNumbers": obj['totalTrackNumbers'], "totalLinks": len(obj["links"]), "links": []}
-
-def makeJson(obj):
-    #try:
-    #    with open(jsonFile, 'r') as f:
-    #        data = json.load(f)
-    #except FileNotFoundError:
-    with open(jsonFile, 'w') as f:
-        json.dump(data, f, indent=4)
-
-def makeLink():
-    totalTrackNums = len(trackNum)
-    globalTrackingNumberAppended = 0
-    totalLinks = 0
-    
-    # The main 'links' list for URLs is built inside the loop now
-    built_links_urls = []
-
-    # Loop as long as there are tracking numbers to process
-    while globalTrackingNumberAppended < totalTrackNums:
-        
-        # 1. Create a NEW dictionary and list for EACH link inside the loop
-        link_details = {}
-        current_link_track_numbers = []
-        localTrackNumbersAppended = 0
-
-        # Build a single link with up to 30 tracking numbers
-        while (localTrackNumbersAppended < 30) and (globalTrackingNumberAppended < totalTrackNums):
-            # Add the current tracking number to our list for this specific link
-            current_track_num = trackNum[globalTrackingNumberAppended]
-            current_link_track_numbers.append(current_track_num)
-            
-            globalTrackingNumberAppended += 1
-            localTrackNumbersAppended += 1
-        
-        # 2. Construct the full URL string from the numbers collected for this link
-        link_url = baseLink + "-".join(current_link_track_numbers)
-        built_links_urls.append(link_url)
-
-        # 3. Populate the NEW dictionary with the correct data
-        link_details['link'] = link_url
-        link_details['trackNumbersCount'] = len(current_link_track_numbers)
-        link_details['trackNumbers'] = current_link_track_numbers # Assign the list of numbers
-
-        # 4. Append the unique dictionary to the main data structure
-        data['links'].append(link_details)
-        totalLinks += 1
-
-    # Update the total counts at the end
-    data['totalTrackNumbers'] = globalTrackingNumberAppended
-    data['totalLinks'] = totalLinks
-
-def getTrackAllNums(path):
-    with open(path, "r") as file:
-        data = csv.DictReader(file)
-        num = 0
-        for line in data:
-            if (re.search("MTY", line['OUTBOUND TRACKING']) != None) or (line['PAQUETERIA'] == "PAQUETE EXPRESS"): 
-                trackingNumber = line['OUTBOUND TRACKING']
-                #print(trackingNumber)
-                matches = re.findall("(MTY.*)(001001)", trackingNumber)
-                trackNum.append(matches[0][0])
-                num += 1 
-        #print(f"There is {num} track numbers")
-
 def main():
+    # 1. Check if a file path was provided as a command-line argument.
+    if len(sys.argv) < 2:
+        # If not, print an error as a JSON object and exit.
+        error_data = {"status": "error", "message": "No file path provided to the script."}
+        print(json.dumps(error_data))
+        sys.exit(1)
+
+    # 2. The file path is the second argument.
     numArg = 0
-    filePath = None
+    file_path = None
     for arg in sys.argv:
         #print("Arg: ", arg)
         if arg == "-f":
-            filePath = sys.argv[numArg + 1]
+            file_path = sys.argv[numArg + 1]
         numArg += 1
-
-    if None == filePath:
-        print("That is not the usage method")
+    
+    if file_path == None:
+        error_data = {"status": "error", "message": f"File flag not given: {file_path}"}
+        print(json.dumps(error_data))
         sys.exit(1)
 
-    #filePath = "../data/MAXIMAS WAREHOUSE - ENTRADAS.csv"
-    getTrackAllNums(filePath)
-    makeLink()
-    #for i in links:
-        #print(i)
-    makeJson(allInfo)
+    track_numbers = []
     
+    # --- Your Logic to Read the File ---
+    try:
+        with open(file_path, "r", encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for line in reader:
+                # Check for the required keys in the CSV header
+                if 'OUTBOUND TRACKING' in line and 'PAQUETERIA' in line:
+                    if "PAQUETE EXPRESS" in line['PAQUETERIA'] or "MTY" in line['OUTBOUND TRACKING']:
+                        tracking_number = line['OUTBOUND TRACKING']
+                        # Simplify regex and handle cases where it might not match
+                        matches = re.findall("(MTY[A-Z0-9]+)", tracking_number)
+                        if matches:
+                            track_numbers.append(matches[0])
+    except FileNotFoundError:
+        error_data = {"status": "error", "message": f"File not found at path: {file_path}"}
+        print(json.dumps(error_data))
+        sys.exit(1)
+    except Exception as e:
+        error_data = {"status": "error", "message": f"An error occurred while reading the file: {str(e)}"}
+        print(json.dumps(error_data))
+        sys.exit(1)
+
+    # --- Your Logic to Build Links ---
+    base_link = "https://www.paquetexpress.com.mx/rastreo/"
+    final_data = {"totalTrackNumbers": 0, "totalLinks": 0, "links": []}
     
+    processed_count = 0
+    total_track_nums = len(track_numbers)
+
+    while processed_count < total_track_nums:
+        # Take a chunk of up to 30 tracking numbers
+        chunk = track_numbers[processed_count : processed_count + 30]
+        
+        link_details = {
+            "link": base_link + "-".join(chunk),
+            "trackNumbersCount": len(chunk),
+            "trackNumbers": chunk
+        }
+        
+        final_data["links"].append(link_details)
+        processed_count += len(chunk)
+
+    final_data["totalTrackNumbers"] = total_track_nums
+    final_data["totalLinks"] = len(final_data["links"])
     
+    # 3. Print the final result as a single JSON string.
+    # This is the ONLY print statement that should run on success.
+    print(json.dumps(final_data))
 
 if __name__ == "__main__":
     main()
-    print(data)
-    sys.exit(0)

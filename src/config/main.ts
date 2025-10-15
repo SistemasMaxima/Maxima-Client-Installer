@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, IpcMainEvent, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { spawn } from 'child_process';
 
@@ -6,34 +6,24 @@ let selectedFilePath: string | null = null;
 
 function createWindow(): void {
     const mainWindow = new BrowserWindow({
-        width: 768,
-        height: 560,
+        width: 800,
+        height: 600,
         frame: false,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'), // This path will be relative to the 'dist' folder
+            preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
         }
     });
 
     // --- IPC Handlers for Window Controls ---
     ipcMain.on('minimize-window', () => mainWindow.minimize());
-
     ipcMain.on('maximize-window', () => {
-        if (mainWindow.isMaximized()) {
-            mainWindow.unmaximize();
-        } else {
-            mainWindow.maximize();
-        }
+        if (mainWindow.isMaximized()) mainWindow.unmaximize();
+        else mainWindow.maximize();
     });
-
     ipcMain.on('close-window', () => mainWindow.close());
 
-    ipcMain.on('file-selected', (event: IpcMainEvent, filePath: string) => {
-        console.log('File received in main process:', filePath);
-        const absolutePath = path.dirname(filePath);
-        console.log('File path resolved:', absolutePath);
-    });
-
+    // --- Handler for the 'select-file' command ---
     ipcMain.handle('select-file', async () => {
         const { canceled, filePaths } = await dialog.showOpenDialog({
             properties: ['openFile'],
@@ -42,68 +32,55 @@ function createWindow(): void {
 
         if (canceled || filePaths.length === 0) {
             selectedFilePath = null;
-            return null; // Return null if the user cancels
+            return null;
         }
 
-        selectedFilePath = filePaths[0]; // Store the full path securely here
-        return path.basename(selectedFilePath); // Return only the file's name to the UI
+        selectedFilePath = filePaths[0];
+        return path.basename(selectedFilePath);
     });
 
+    // --- Handler for the 'run-parser' command ---
     ipcMain.handle('run-parser', async () => {
         if (!selectedFilePath) {
-            // If no file was stored, return an error object
-            return { status: 'error', message: 'No file has been selected to parse.' };
+            return { status: 'error', message: 'No file has been selected.' };
         }
 
-        // Wrap the child process in a Promise to handle async behavior
         return new Promise((resolve, reject) => {
-            const scriptPath = path.join(app.getAppPath(), 'engine', 'parser.py');
-            const pythonProcess = spawn('python', [scriptPath, selectedFilePath!]);
+            console.log(selectedFilePath)
+            const executablePath = path.join(__dirname, '..', '..', 'parser', 'parser.exe');
+            const parserProcess = spawn(executablePath, ['-f', selectedFilePath!]);
 
             let result = '';
-            pythonProcess.stdout.on('data', (data) => {
-                // The Python script will print its JSON output, which we collect here.
-                result += data.toString();
-            });
-
+            parserProcess.stdout.on('data', (data) => result += data.toString());
             let error = '';
-            pythonProcess.stderr.on('data', (data) => {
-                // Collect any errors that the Python script might print.
-                error += data.toString();
-            });
+            parserProcess.stderr.on('data', (data) => error += data.toString());
 
-            pythonProcess.on('close', (code) => {
+            parserProcess.on('close', (code) => {
                 if (code === 0) {
-                    // If the script exits successfully (code 0), parse the JSON result.
-                    //resolve(JSON.parse(result));
-                    console.log('Result: ', result)
-                    resolve(result);
+                    try {
+                        console.log(result)
+                        resolve(JSON.parse(result));
+                    } catch (e) {
+                        reject(new Error('Failed to parse Python script output as JSON.'));
+                    }
                 } else {
-                    // If the script exits with an error, reject the promise.
                     reject(new Error(error));
                 }
-                console.log('Python exited with code: ', code)                
             });
         });
     });
 
-    // Load the HTML file, adjusting path for 'dist' folder
-    mainWindow.loadFile(path.join(__dirname, '..', 'app', 'html', 'index.html'));
-
-    /* Uncomment this line for Dev Tools */
-    //mainWindow.webContents.openDevTools(); 
+    // CORRECTED PATH: Load the HTML file from the 'dist/src' directory.
+    mainWindow.loadFile(path.join('dist', 'src', 'app', 'html', 'index.html'));
 }
 
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
+    if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
-    }
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
+

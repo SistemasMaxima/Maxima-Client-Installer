@@ -1,20 +1,16 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-// It's a good practice to define the shape of your API
-export interface ElectronAPI {
-  minimizeWindow: () => void;
-  maximizeWindow: () => void;
-  closeWindow: () => void;
-  selectFile: () => void;
-  runParser: () => void;
-}
-
-const api: ElectronAPI = {
+const electronAPI = {
   minimizeWindow: () => ipcRenderer.send('minimize-window'),
   maximizeWindow: () => ipcRenderer.send('maximize-window'),
   closeWindow: () => ipcRenderer.send('close-window'),
+  
+  // 1. Expose the function to open the file dialog
   selectFile: () => ipcRenderer.invoke('select-file'),
+  
+  // 2. Expose the function to run the parser on the selected file
   runParser: () => ipcRenderer.invoke('run-parser'),
 };
 
-contextBridge.exposeInMainWorld('electronAPI', api);
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);
+
