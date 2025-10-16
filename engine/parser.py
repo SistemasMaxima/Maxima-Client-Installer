@@ -37,9 +37,9 @@ def main():
                     if "PAQUETE EXPRESS" in line['PAQUETERIA'] or "MTY" in line['OUTBOUND TRACKING']:
                         tracking_number = line['OUTBOUND TRACKING']
                         # Simplify regex and handle cases where it might not match
-                        matches = re.findall("(MTY[A-Z0-9]+)", tracking_number)
+                        matches = re.findall("(MTY[a-zA-Z0-9]+)(001001)", tracking_number)
                         if matches:
-                            track_numbers.append(matches[0])
+                            track_numbers.append(matches[0][0])
     except FileNotFoundError:
         error_data = {"status": "error", "message": f"File not found at path: {file_path}"}
         print(json.dumps(error_data))
