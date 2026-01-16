@@ -4,17 +4,18 @@
   "description": "Application to parse files and clean them",
   "main": "dist/src/config/main.js",
   "scripts": {
-    "compile-py": "echo compiling python script... && pyinstaller ./engine/parser.py --clean --noconfirm --log-level=ERROR",
+    "compile-py": "echo compiling python script... && pyinstaller ./engine/parser.py --onefile --distpath ./engine/dist --workpath ./engine/py_build --clean --noconfirm --log-level=ERROR",
     "compile-ts": "tsc -p src/config/tsconfig.json && tsc -p src/app/tsconfig.renderer.json",
-    "compile-all":"npm run compile-py && npm run compile-ts",
-    "copy-html":"copyfiles -u 1 src/**/*.html dist/src/",
-    "copy-css":"copyfiles -u 1 src/**/*.css dist/src/",
-    "copy-all":"npm run copy-html && npm run copy-css",
+    "compile-all": "npm run compile-py && npm run compile-ts",
+    "copy-html": "copyfiles -u 1 src/**/*.html dist/src/",
+    "copy-css": "copyfiles -u 1 src/**/*.css dist/src/",
+    "copy-all": "npm run copy-html && npm run copy-css",
     "build": "npm run compile-all && npm run copy-all",
+    "package": "npm run build && electron-builder",
     "start": "npm run secure-run && npm run clean && npm run build && electron . --trace-warnings && npm run clean",
     "start-debug": "npm run secure-run && npm run build && electron . --trace-warnings",
     "secure-run": "if NOT \"%cd%\" == \"%INIT_CWD%\" (echo Error: This script must be run from the project root. & exit 1) else (echo Running script...)",
-    "clean": "if exist \"./dist\" rmdir /s /q \"./dist\" && if exist \"./build\" rmdir /s /q \"./build\""
+    "clean": "if exist \"./dist\" rmdir /s /q \"./dist\" && if exist \"./build\" rmdir /s /q \"./build\" && if exist \"./engine/dist\" rmdir /s /q \"./engine/dist\" && if exist \"./engine/py_build\" rmdir /s /q \"./engine/py_build\""
   },
   "author": "adrianmtztrev",
   "license": "ISC",
@@ -23,6 +24,21 @@
     "@types/node": "^24.7.0",
     "copyfiles": "^2.4.1",
     "electron": "^38.2.1",
+    "electron-builder": "^24.13.3",
     "typescript": "^5.9.3"
+  },
+  "build": {
+    "productName": "CargoMty",
+    "appId": "com.cargomty.app",
+    "files": [
+      "dist/src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "engine/dist",
+        "to": "engine"
+      }
+    ]
   }
 }

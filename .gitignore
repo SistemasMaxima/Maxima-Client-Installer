@@ -41,3 +41,10 @@ pycache/
 /data
 *.csv
 *.xlsx
+
+# txt files
+*.txt
+
+# dist of python files
+/engine/dist
+/engine/py_build
